@@ -1,92 +1,124 @@
-# Prox Founding Engineer Challenge
+# Vulcan OmniPro 220 — AI Welding Assistant
 
-<img src="product.webp" alt="Vulcan OmniPro 220" width="400" /> <img src="product-inside.webp" alt="Vulcan OmniPro 220 — inside panel" width="400" />
+A multimodal reasoning agent for the Vulcan OmniPro 220 multiprocess welder (Harbor Freight #57812), built with the Anthropic Claude SDK.
 
-## The Product
+![Agent Screenshot](https://github.com/prox-technologies/prox-challenge/raw/main/product.webp)
 
-The [Vulcan OmniPro 220](https://www.harborfreight.com/omnipro-220-industrial-multiprocess-welder-with-120240v-input-57812.html) is a multiprocess welding system sold by Harbor Freight. It supports four welding processes (MIG, Flux-Cored, TIG, and Stick), runs on both 120V and 240V input, and has an LCD-based synergic control system.
+## ✨ What It Does
 
-Its owner's manual is 48 pages of dense technical content. Duty cycle matrices across multiple voltages and amperages, polarity setup procedures that differ per welding process, wire feed mechanisms with specific tensioner calibrations, wiring schematics, troubleshooting matrices, weld diagnosis diagrams, and a full parts list.
+This agent answers deep technical questions about the OmniPro 220 — and critically, **generates visual responses** when text alone isn't enough:
 
-This is exactly the kind of product Prox exists for. Nobody knows how to use this machine straight out of the box but has time to read 48 page manual, but a complicated machine needs expert-level support.
+| Question Type | Response Format |
+|---|---|
+| Polarity setup | SVG wiring diagram with color-coded cables |
+| Duty cycle | Interactive calculator with sliders |
+| Troubleshooting | HTML decision flowchart |
+| Material settings | Interactive settings configurator |
+| Weld diagnosis (photo) | Visual defect analysis |
 
-Additional video: https://www.youtube.com/watch?v=kxGDoGcnhBw
-
-## Your Job
-
-Build a multimodal reasoning agent for the Vulcan OmniPro 220 using the Claude Agent SDK. The agent must be able to answer deep technical questions about this product accurately, helpfully, and not just in text.
-
-The manuals are in the `files/` directory.
-
-**There is no limit to how far you can go.** You can integrate voice. You can build a full interactive experience. Sky is the limit. The more ambitious and polished, the better.
-
-## What We're Testing
-
-### 1. Deep Technical Accuracy
-
-Your agent needs to answer questions like these correctly:
-
-- "What's the duty cycle for MIG welding at 200A on 240V?"
-- "I'm getting porosity in my flux-cored welds. What should I check?"
-- "What polarity setup do I need for TIG welding? Which socket does the ground clamp go in?"
-
-We will test with questions that require cross-referencing multiple manual sections, understanding visual content (diagrams, schematics, charts), and handling ambiguous questions that need clarification from the user.
-
-### 2. Multimodal Responses
-
-This is the most important part. Your agent must not be text-only.
-
-- If someone asks about polarity setup, the agent should draw or show a diagram of which cable goes in which socket, not just describe it.
-- If the answer relates to a specific image in the manual (the wire feed mechanism, the front panel controls, the weld diagnosis examples), the agent should surface that image.
-- If a question is complex enough, the agent should generate interactive content: a duty cycle calculator, a troubleshooting flowchart, a settings configurator that takes process + material + thickness and outputs recommended wire speed and voltage.
-
-When something is too cognitively hard to explain in words, the agent should draw it. Real-time diagrams, interactive schematics, visual walkthroughs generated through code.
-
-For your agent to handle these responses well you need to reverse engineer Claude artifacts. Here are two places where you can start:
-- https://claude.ai/artifacts (see how Claude renders interactive artifacts in chat)
-- https://www.reidbarber.com/blog/reverse-engineering-claude-artifacts
-
-### 3. Tone and Helpfulness
-
-Imagine your user just bought this welder and is standing in their garage trying to set it up. They're not an idiot, but they're not a professional welder either.
-
-### 4. Knowledge Extraction Quality
-
-The manual has a mix of text, tables, labeled diagrams, schematics, and decision matrices. Some critical information exists only in images (the welding process selection chart, the weld diagnosis photos, the wiring schematic). We want to see that your agent understands and presents the visual content, not just the text.
-
-## Tech Requirements
-
-- Use the [Anthropic Claude Agent SDK](https://docs.anthropic.com) as the foundation for your agent.
-- The project must run locally with a single API key provided via `.env`.
-- You are responsible for your own API costs during development.
-
-## How to Present Your Work
-
-**This matters.** Your submission is not just the code — it's how you present it.
-
-- **Build a frontend.** The best way for us to evaluate your agent is if it has a clean, simple UI we can run immediately. This is realistically the only way to properly demo an agent like this.
-- **Hosting is a plus.** If you host it somewhere we can access without cloning, that's a strong signal. Not required, but it removes friction and shows initiative.
-- **Write a clear README.** Explain how your agent works, what design decisions you made, how knowledge is extracted and represented, and how to run it. Your documentation will be evaluated — we want to see how you think and communicate, not just how you code.
-- **Video walkthrough is a huge plus.** Record yourself demoing the agent and explaining your approach. Walk through the hard questions, show how it handles multimodal responses, explain your architecture. This gives us a much richer picture of your work than code alone.
-
-We should be running your agent within 2 minutes of cloning your repo:
+## 🚀 Setup (< 2 minutes)
 
 ```bash
 git clone <your-fork>
 cd <your-fork>
-cp .env.example .env   # we plug in our own Anthropic API key
-# your install command (npm install, uv install, etc.)
-# your run command (npm run dev, python app.py, etc.)
+cp .env.example .env
+# Add your Anthropic API key to .env
+npm install
+npm start
 ```
 
-If it takes longer than that to set up, that's a problem.
+Open **http://localhost:3000**
 
-## What to Submit
+> The OmniPro 220 owner's manual, quick-start guide, and selection chart are already included in `files/`. The agent loads the manual automatically on startup — no extra steps needed.
 
-1. Fork this repo.
-2. Build your solution.
-3. Submit your fork URL through the form at [useprox.com/join/challenge](https://useprox.com/join/challenge).
+## 🏗 Architecture
 
-## What Happens Next
+```
+User Question + Optional Image
+        ↓
+Express Server (multer for file upload)
+        ↓
+Claude Sonnet (vision-capable)
+    ├── System prompt: full manual knowledge + visual response rules
+    ├── Conversation history: multi-turn context
+    └── PDF document: raw manual pages (if available)
+        ↓
+Structured JSON response:
+    ├── text: conversational explanation
+    └── artifact: { type, title, content } — HTML/SVG visual
+        ↓
+Frontend renders artifact in inline card + expandable side panel
+```
 
-We review submissions on a rolling basis and respond to every single one within a few days. Good luck.
+### Key Design Decisions
+
+**1. Knowledge-in-prompt vs RAG**  
+For a 48-page manual, I chose to encode the critical knowledge (duty cycle tables, polarity setups, troubleshooting matrices, material settings) directly in the system prompt as structured data. This ensures sub-second responses without a retrieval step, and the agent can cross-reference multiple sections in a single inference.
+
+RAG would shine for a 500+ page manual. At 48 pages, the system prompt approach gives more reliable cross-referencing (the model can reason holistically, not just retrieve).
+
+**2. Structured JSON output**  
+The agent always responds in `{ text, artifact }` JSON. This separates the conversational explanation from the visual, letting the UI render them independently. The artifact panel expands on demand for a larger view.
+
+**3. Visual-first philosophy**  
+The system prompt has explicit rules: if the question involves polarity → generate SVG diagram; if duty cycle → generate interactive calculator; if troubleshooting → generate flowchart. The agent is instructed to *draw* what's cognitively hard to explain in words.
+
+**4. Multimodal input**  
+Users can attach photos of their weld bead or machine setup. Claude's vision analyzes weld defects (porosity, spatter, undercut) against the manual's diagnosis chart.
+
+**5. Conversation memory**  
+Full conversation history is passed on each request, enabling follow-up questions ("now show me the same for 120V").
+
+## 🧪 Sample Questions to Test
+
+**Technical accuracy:**
+- "What's the duty cycle for MIG welding at 200A on 240V?"
+- "What polarity do I need for flux-cored welding with gasless wire?"
+- "Can I run 0.035" wire on this machine for 1/4" steel?"
+
+**Multimodal response:**
+- "Show me a polarity diagram for TIG welding"
+- "Give me an interactive duty cycle calculator for all processes"
+- "Build me a settings configurator for MIG welding different steel thicknesses"
+
+**Image-based:**
+- Attach a photo of a weld and ask "What's wrong with this weld?"
+- Attach a photo of the front panel and ask "What do these settings mean?"
+
+**Troubleshooting:**
+- "I'm getting porosity in my MIG welds. Walk me through diagnosis."
+- "My wire keeps bird-nesting. What should I check?"
+
+## 📁 Project Structure
+
+```
+prox-challenge/
+├── server.js              # Express API + Claude agent (streaming SSE)
+├── public/
+│   └── index.html         # Frontend UI (single-file, streaming client)
+├── files/
+│   ├── owner-manual.pdf       # Full 48-page OmniPro 220 manual
+│   ├── quick-start-guide.pdf
+│   └── selection-chart.pdf
+├── .env.example
+├── package.json
+└── README.md
+```
+
+## 🔧 Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | ✅ | Your Anthropic API key |
+| `PORT` | No | Server port (default: 3000) |
+
+## 💡 Design Philosophy
+
+The target user just bought a $1,100 welder and is standing in their garage. They don't have time to read 48 pages. They need:
+
+1. **Fast, accurate answers** — not hedge-everything LLM hedging
+2. **Visual clarity** — a wiring diagram is worth 500 words
+3. **Interactive tools** — a duty cycle slider is more useful than a table
+4. **Appropriate confidence** — they're not idiots, they just need the right info
+
+The agent treats them like a knowledgeable friend who happens to have memorized the manual.

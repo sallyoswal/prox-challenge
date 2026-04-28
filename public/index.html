@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vulcan OmniPro 220 — AI Welding Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #141416;
+    --surface2: #1c1c20;
+    --border: #2a2a30;
+    --border2: #3a3a42;
+    --accent: #ff6b1a;
+    --accent2: #ff8c42;
+    --accent-dim: rgba(255, 107, 26, 0.15);
+    --text: #f0f0f2;
+    --text2: #9898a8;
+    --text3: #5a5a6a;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --yellow: #eab308;
+    --danger: #ef4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .logo-mark {
+    width: 40px;
+    height: 40px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-mark svg { width: 22px; height: 22px; }
+
+  .header-text h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    line-height: 1;
+  }
+
+  .header-text p {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .status-pill {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .quick-chip {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    margin-bottom: 6px;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+
+  .quick-chip:hover {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  .quick-chip strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 2px;
+    font-size: 12px;
+  }
+
+  .spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .spec-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .spec-card .label { font-size: 9px; color: var(--text3); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+  .spec-card .val { font-size: 13px; font-weight: 600; color: var(--accent2); margin-top: 1px; }
+
+  .process-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--text2);
+    margin: 3px 3px 0 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Welcome screen */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    text-align: center;
+    padding: 40px 24px;
+  }
+
+  .welcome-icon {
+    width: 72px;
+    height: 72px;
+    background: var(--accent-dim);
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .welcome h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #fff 30%, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .welcome p {
+    color: var(--text2);
+    max-width: 420px;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  /* Message bubbles */
+  .message {
+    display: flex;
+    gap: 12px;
+    max-width: 100%;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .avatar.ai { background: var(--accent); color: white; font-family: 'Syne', sans-serif; }
+  .avatar.user { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); }
+
+  .bubble {
+    max-width: 70%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .message.user .bubble { align-items: flex-end; }
+
+  .bubble-text {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .message.user .bubble-text {
+    background: var(--accent);
+    border-color: var(--accent2);
+    color: white;
+  }
+
+  .bubble-text p + p { margin-top: 10px; }
+
+  /* Artifact card */
+  .artifact-card {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    overflow: hidden;
+    width: 600px;
+    max-width: 100%;
+  }
+
+  .artifact-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .artifact-icon {
+    width: 20px; height: 20px;
+    background: var(--accent-dim);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .artifact-title { font-size: 12px; font-weight: 600; color: var(--text2); }
+
+  .artifact-body {
+    padding: 0;
+    background: white;
+  }
+
+  .artifact-body iframe {
+    width: 100%;
+    border: none;
+    display: block;
+    min-height: 320px;
+  }
+
+  /* Image preview */
+  .image-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .image-preview img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    gap: 4px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: fit-content;
+  }
+
+  .typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text3);
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); background: var(--text3); }
+    30% { transform: translateY(-6px); background: var(--accent); }
+  }
+
+  /* Input area */
+  .input-area {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .input-box {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    resize: none;
+    min-height: 48px;
+    max-height: 140px;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+
+  .input-box:focus { border-color: var(--accent); }
+  .input-box::placeholder { color: var(--text3); }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-icon:hover { background: var(--surface); color: var(--text); }
+
+  .btn-send {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-send:hover { background: var(--accent2); }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .image-attach-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+
+  .image-attach-preview button {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    margin-left: auto;
+    padding: 2px;
+  }
+
+  .input-hint {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  #fileInput { display: none; }
+
+  /* Artifact panel (right side) */
+  .artifact-panel {
+    width: 0;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 0.3s ease;
+  }
+
+  .artifact-panel.open {
+    width: 500px;
+  }
+
+  .artifact-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .artifact-panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    flex: 1;
+  }
+
+  .close-panel {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+  }
+
+  .close-panel:hover { color: var(--text); background: var(--surface2); }
+
+  .artifact-panel-body {
+    flex: 1;
+    overflow: hidden;
+    background: white;
+  }
+
+  .artifact-panel-body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  /* Error state */
+  .error-bubble {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #fca5a5;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .artifact-panel.open { width: 100%; position: fixed; top: 0; left: 0; z-index: 100; height: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">
+    <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11 2L3 7v8l8 5 8-5V7L11 2z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M7 14l4-8 4 8" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 12h6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <h1>Vulcan OmniPro 220</h1>
+    <p>AI Welding Assistant · Item #57812</p>
+  </div>
+  <div class="status-pill">
+    <span class="status-dot"></span>
+    Online
+  </div>
+</header>
+
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Quick Questions</div>
+      <button class="quick-chip" onclick="sendChip('What polarity setup do I need for TIG welding? Show me a diagram.')">
+        <strong>⚡ TIG Polarity Setup</strong>
+        Cable connections with diagram
+      </button>
+      <button class="quick-chip" onclick="sendChip('What is the duty cycle for MIG welding at 200A on 240V?')">
+        <strong>⏱ Duty Cycle 200A MIG</strong>
+        How long can I weld?
+      </button>
+      <button class="quick-chip" onclick="sendChip('I\'m getting porosity in my flux-cored welds. What should I check?')">
+        <strong>🔍 Porosity Troubleshoot</strong>
+        Fix holes in my welds
+      </button>
+      <button class="quick-chip" onclick="sendChip('What settings should I use for MIG welding 1/4 inch steel on 240V? Give me a settings configurator.')">
+        <strong>⚙️ Settings for 1/4" Steel</strong>
+        MIG wire speed & voltage
+      </button>
+      <button class="quick-chip" onclick="sendChip('Show me a duty cycle chart for all processes on 240V as an interactive calculator.')">
+        <strong>📊 Duty Cycle Calculator</strong>
+        All processes & voltages
+      </button>
+      <button class="quick-chip" onclick="sendChip('How do I set up for Stick welding? Show me the polarity and cable connections.')">
+        <strong>🔧 Stick Welding Setup</strong>
+        Step-by-step with diagram
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Machine Specs</div>
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="label">Max Amps</div>
+          <div class="val">220A</div>
+        </div>
+        <div class="spec-card">
+          <div class="label">Input</div>
+          <div class="val">120/240V</div>
+        </div>
+        <div class="spec-card">
+          <div class="label">Duty @200A</div>
+          <div class="val">25%</div>
+        </div>
+        <div class="spec-card">
+          <div class="label">Weight</div>
+          <div class="val">49 lb</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Supported Processes</div>
+      <span class="process-badge">🔵 MIG</span>
+      <span class="process-badge">🟡 Flux-Core</span>
+      <span class="process-badge">🟣 TIG</span>
+      <span class="process-badge">🔴 Stick</span>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <path d="M18 4L6 11v14l12 7 12-7V11L18 4z" stroke="#ff6b1a" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M12 23l6-12 6 12" stroke="#ff6b1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M14 19h8" stroke="#ff6b1a" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Ask me anything about your welder</h2>
+        <p>I know every page of the OmniPro 220 manual. Ask about duty cycles, polarity setups, wire settings, troubleshooting — and I'll generate visual diagrams and interactive tools when it helps.</p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div id="imageAttachPreview" class="image-attach-preview" style="display:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        <span id="imageAttachName">image.jpg</span>
+        <button onclick="clearImage()" title="Remove image">✕</button>
+      </div>
+      <div class="input-row">
+        <button class="btn-icon" onclick="document.getElementById('fileInput').click()" title="Attach image of your weld or setup">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </button>
+        <input type="file" id="fileInput" accept="image/*" onchange="attachImage(event)">
+        <textarea class="input-box" id="messageInput" placeholder="Ask about duty cycles, polarity, wire settings, troubleshooting..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="btn-send" id="sendBtn" onclick="sendMessage()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">↵ Send · Shift+↵ New line · 📎 Attach weld photo for diagnosis</div>
+    </div>
+  </div>
+
+  <!-- Artifact panel -->
+  <div class="artifact-panel" id="artifactPanel">
+    <div class="artifact-panel-header">
+      <div class="artifact-icon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff6b1a" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 9 21 9"/></svg>
+      </div>
+      <span class="artifact-panel-title" id="artifactPanelTitle">Visual</span>
+      <button class="close-panel" onclick="closeArtifact()">✕</button>
+    </div>
+    <div class="artifact-panel-body">
+      <iframe id="artifactFrame" title="Interactive Visual"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+let sessionId = null;   // server-side session; history never leaves the server after turn 1
+let attachedImage = null;
+let attachedImageType = null;
+let isLoading = false;
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function attachImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    attachedImage = ev.target.result.split(',')[1];
+    attachedImageType = file.type;
+    document.getElementById('imageAttachName').textContent = file.name;
+    document.getElementById('imageAttachPreview').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  attachedImage = null;
+  attachedImageType = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('imageAttachPreview').style.display = 'none';
+}
+
+async function sendChip(text) {
+  document.getElementById('messageInput').value = text;
+  await sendMessage();
+}
+
+// Extracts and decodes the "text" field value from partial streaming JSON.
+// The model outputs: {"text": "actual content here", "artifact": {...}}
+// We pull out the text value character-by-character as tokens arrive so it
+// renders progressively instead of waiting for the full response.
+function extractStreamingText(buf) {
+  const m = buf.match(/"text"\s*:\s*"/);
+  if (!m) return null;
+  const content = buf.slice(m.index + m[0].length);
+  let result = '';
+  let i = 0;
+  while (i < content.length) {
+    if (content[i] === '\\') {
+      if (i + 1 >= content.length) break; // wait for next token to complete escape
+      const c = content[i + 1];
+      if      (c === '"')  { result += '"';  i += 2; }
+      else if (c === 'n')  { result += '\n'; i += 2; }
+      else if (c === 't')  { result += '\t'; i += 2; }
+      else if (c === 'r')  { result += '\r'; i += 2; }
+      else if (c === '\\') { result += '\\'; i += 2; }
+      else                 { result += c;    i += 2; }
+    } else if (content[i] === '"') {
+      break; // end of text value
+    } else {
+      result += content[i++];
+    }
+  }
+  return result || null;
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.style.display = 'none';
+
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+  input.value = '';
+  input.style.height = 'auto';
+
+  const msgs = document.getElementById('messages');
+
+  // User bubble
+  const userMsg = document.createElement('div');
+  userMsg.className = 'message user';
+  userMsg.innerHTML = `
+    <div class="avatar user">You</div>
+    <div class="bubble">
+      ${attachedImage ? `<div class="image-preview"><img src="data:${escapeHtml(attachedImageType)};base64,${attachedImage}" alt="attached"><span>Image attached</span></div>` : ''}
+      <div class="bubble-text"><p>${escapeHtml(text)}</p></div>
+    </div>`;
+  msgs.appendChild(userMsg);
+
+  // AI bubble — pre-created so we can stream text into it
+  const targetId = 'stream-' + Date.now();
+  const aiMsg = document.createElement('div');
+  aiMsg.className = 'message';
+  aiMsg.innerHTML = `
+    <div class="avatar ai">V</div>
+    <div class="bubble">
+      <div class="bubble-text" id="${targetId}"><div class="typing"><span></span><span></span><span></span></div></div>
+    </div>`;
+  msgs.appendChild(aiMsg);
+  scrollBottom();
+
+  const streamTarget = document.getElementById(targetId);
+
+  try {
+    const formData = new FormData();
+    formData.append('message', text);
+    if (sessionId) formData.append('sessionId', sessionId);
+
+    if (attachedImage) {
+      const blob = await fetch(`data:${attachedImageType};base64,${attachedImage}`).then(r => r.blob());
+      formData.append('image', blob, 'image.jpg');
+      clearImage();
+    }
+
+    const resp = await fetch('/api/chat', { method: 'POST', body: formData });
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+
+    let sseBuffer = '';
+    let tokenBuffer = '';
+    let hasStartedStreaming = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      sseBuffer += decoder.decode(value, { stream: true });
+
+      // SSE events are separated by double newlines
+      const events = sseBuffer.split('\n\n');
+      sseBuffer = events.pop(); // last chunk may be incomplete
+
+      for (const raw of events) {
+        if (!raw.startsWith('data: ')) continue;
+        let data;
+        try { data = JSON.parse(raw.slice(6)); } catch { continue; }
+
+        if (data.error) {
+          streamTarget.innerHTML = `<div class="error-bubble">Error: ${escapeHtml(data.error)}</div>`;
+          break;
+        }
+
+        if (data.token) {
+          tokenBuffer += data.token;
+          const extracted = extractStreamingText(tokenBuffer);
+          if (extracted !== null) {
+            if (!hasStartedStreaming) {
+              hasStartedStreaming = true;
+              streamTarget.innerHTML = '';
+            }
+            streamTarget.innerHTML = formatText(extracted);
+            scrollBottom();
+          }
+        }
+
+        if (data.done) {
+          // Final render with fully parsed text and artifact
+          streamTarget.innerHTML = formatText(data.text || '');
+
+          if (data.artifact && data.artifact.content) {
+            const artifactId = 'artifact-' + Date.now();
+            const artifactEl = document.createElement('div');
+            artifactEl.className = 'artifact-card';
+            artifactEl.innerHTML = `
+              <div class="artifact-header">
+                <div class="artifact-icon">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ff6b1a" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 9 21 9"/></svg>
+                </div>
+                <span class="artifact-title">${escapeHtml(data.artifact.title || 'Visual')}</span>
+                <button onclick="openArtifact('${artifactId}')" style="margin-left:auto;background:none;border:1px solid var(--border2);color:var(--text2);border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;">Expand ↗</button>
+              </div>
+              <div class="artifact-body">
+                <iframe id="${artifactId}" srcdoc="${escapeAttr(data.artifact.content)}" style="width:100%;min-height:320px;border:none;" onload="autoHeight(this)"></iframe>
+              </div>`;
+            aiMsg.querySelector('.bubble').appendChild(artifactEl);
+            setTimeout(() => openArtifactContent(data.artifact.title, data.artifact.content), 100);
+          }
+
+          if (data.sessionId) sessionId = data.sessionId;
+          scrollBottom();
+        }
+      }
+    }
+  } catch (err) {
+    streamTarget.innerHTML = `<div class="error-bubble">Connection error. Is the server running?</div>`;
+  }
+
+  isLoading = false;
+  document.getElementById('sendBtn').disabled = false;
+  scrollBottom();
+}
+
+function autoHeight(iframe) {
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    const h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
+    iframe.style.height = Math.min(h + 10, 600) + 'px';
+  } catch(e) {}
+}
+
+function openArtifact(id) {
+  const iframe = document.getElementById(id);
+  if (iframe) {
+    const card = iframe.closest('.artifact-card');
+    openArtifactContent(card.querySelector('.artifact-title').textContent, iframe.srcdoc);
+  }
+}
+
+function openArtifactContent(title, content) {
+  document.getElementById('artifactPanelTitle').textContent = title || 'Visual';
+  document.getElementById('artifactFrame').srcdoc = content;
+  document.getElementById('artifactPanel').classList.add('open');
+}
+
+function closeArtifact() {
+  document.getElementById('artifactPanel').classList.remove('open');
+}
+
+function scrollBottom() {
+  const msgs = document.getElementById('messages');
+  setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+}
+
+function escapeHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escapeAttr(str) {
+  return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function formatText(text) {
+  if (!text) return '';
+  return '<p>' + text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-family:monospace;font-size:12px;">$1</code>')
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    + '</p>';
+}
+</script>
+</body>
+</html>
